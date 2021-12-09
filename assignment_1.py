@@ -69,7 +69,10 @@ def generate_data_dict(N) -> dict:
     n_D = 50 datasets for each configuration, thus len(datasets[20][35])) would output 50 for example.
     """
 
-    datasets = {20: {}, 60: {}, 100: {}}  # datasets with 20 and 40 features
+    datasets = {}
+    for i in range(len(N)):
+        datasets[N[i]] = {} # datasets with 20 and 40 features
+
     for n in N:
         P = [int(a * n) for a in alpha]  # number of datapoints per dataset FOR the current N
         for p in P:
@@ -94,17 +97,15 @@ if __name__ == '__main__':
             proportion_successful[m, k] = number_successful/n_D
 
     plt.figure()
-
-    plt.plot(alpha ,proportion_successful[0,:], label = 'N = 20')
-    #plt.plot(alpha ,proportion_successful[1,:], label = 'N = 40')
-    plt.plot(alpha ,proportion_successful[1,:], label = 'N = 60')
-    #plt.plot(alpha ,proportion_successful[3,:], label = 'N = 80')
-    plt.plot(alpha ,proportion_successful[2,:], label = 'N = 100')
+    for i in range(len(N)):
+        plt.plot(alpha ,proportion_successful[i,:], label = f'N = {N[i]}')
     plt.xlabel('alpha')
     plt.ylabel('Proportion of successful runs')
     plt.legend()
 
     plt.show()
+    
+
 
 
 
@@ -113,4 +114,4 @@ if __name__ == '__main__':
 # 2) Determine embedding strengths x^mu
 # 3) Use non-zero value for 'c'
 # 4) Inhomogeneous perceptron with clamped inputs
-# 5) ...w
+# 5) ...
