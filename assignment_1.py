@@ -10,7 +10,7 @@ np.random.seed(42)
 N = [20, 40]  # number of features for each datapoint
 alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
-n_max = 200  # maximum number of epochs
+n_max = 100  # maximum number of epochs
 
 #### Params for data generation
 MU = 0
@@ -55,7 +55,7 @@ def train(n: int, epochs: int, data: np.ndarray) -> [np.ndarray, np.ndarray]:
      :param data: Dataset containing generated examples using 'generate_data' funct.
      :return: Weight vector array and E_mu array (for all epochs), and epoch number at which training stopped.
      """
-    assert epochs <= n_max, "Epoch number error, can't be higher than n_max"
+    assert epochs < n_max+1, "Epoch number error, can't be higher than n_max"
 
     # - w: weight vector, where "w(t) = weight at timestep t", thus we store all weights that have occurred
     # - len(data)+1 means we are going to have 1 more value in the weight vector than datapoint,
@@ -90,7 +90,8 @@ for n in N:
 # RUN TRAINING for a single dataset
 f = 40  # number of features
 d = 80  # number of datapoints
-w, E_mu, epoch_count = train(f, 199, datasets[f][d][0])
+max_epochs = 100  # number of maximum epochs to perform the training for
+w, E_mu, epoch_count = train(f, max_epochs, datasets[f][d][0])
 
 
 # TODO: Extensions
