@@ -15,7 +15,6 @@ MU = 0
 SIGMA = 1
 
 
-# TODO: implement gaussian data generation (done?)
 def generate_data(n: int, p: int) -> [np.ndarray, np.ndarray]:
     """ Generation of artificial dataset containing P randomly generated N-dimensional feature vectors and labels.
         - The datapoints are sampled from a Gaussian distribution with mu=0 and std=1.
@@ -31,27 +30,49 @@ def generate_data(n: int, p: int) -> [np.ndarray, np.ndarray]:
     return X, y
 
 
-# TODO: implement perceptron algorithm
-def perceptron_algorithm():
+def perceptron_algorithm(X: np.ndarray, y: np.ndarray, w: int, n: int) -> [np.ndarray, int]:
     """ Implementation of the Rosenblatt Perceptron algorithm.
-    :return: ...
+    :return: Updated weight vector and E_mu.
     """
-    return
+
+    E_mu = np.dot(w, X * y)
+    print("E_mu", E_mu)
+    if E_mu <= 0:
+        w_new = w + (1/n) * X * y
+    else:
+        w_new = w
+
+    return w_new, E_mu
 
 
-# TODO: implement training logic
-def train(n: int, p: int, epochs: int, data: np.ndarray):
+def train(n: int, epochs: int, data: np.ndarray):
     """ Implementation of sequential perceptron training by cyclic representation of the P examples.
      :param n: Number of features. A single chosen value from N. E.g.: N[0].
-     :param p: Number of examples. A single chosen value from P. E.g.: P[0][0]. First index has to match index of N.
      :param epochs: Number of epochs.
      :param data: Dataset containing generated examples using 'generate_data' funct.
      :return: ...
      """
-    w = np.array([0])
-    for i in range(epochs):
-        for j in range(p):
-            return
+    assert epochs <= n_max, "Epoch number error, can't be higher than n_max"
+
+    # - w: weight vector, where "w(t) = weight at timestep t", thus we store all weights that have occurred
+    # - len(data)+1 means we are going to have 1 more value in the weight vector than datapoint,
+    #   because first value is always w(0) = 0
+    len_p = len(data[0])
+    w = np.zeros((epochs, len_p+1, n))
+    E_mu = np.zeros((epochs, len_p+1))
+    for e in range(epochs):
+        for i in range(len_p):
+            X, y = data[0][i], data[1][i]  # x∈R^n, y∈R
+            w[e][i+1], E_mu[e][i+1] = perceptron_algorithm(X, y, w[e][i], n)
+    # Training is performed until solution is found, such that E_mu > 0 for all mu, or max number of sweeps is reached
+        if all(E_mu[e]):
+            print(f"Solution has been found in epoch {e+1}")
+            return w, E_mu
+        # At the end of the current epoch, assign w(t), where t=len_p+1, as w(0) for next epoch
+        if e < epochs-1:
+            w[e+1][0] = w[e][-1]
+    print("Training has ended due to reach of maximum number of sweeps, solution has not been found.")
+    return w, E_mu
 
 
 # CREATING DATASETS
@@ -62,6 +83,11 @@ for n in N:
         datasets[n][p] = []
         for _ in range(n_D):  # create n_D datasets for each P
             datasets[n][p].append(generate_data(n, p))
+
+# RUN TRAINING for a single dataset
+f = 20  # number of features
+d = 30  # number of datapoints
+w, E_mu = train(f, 10, datasets[f][d][0])
 
 # TODO: main code for stitching functions together
 
