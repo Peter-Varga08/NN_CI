@@ -4,11 +4,13 @@
 
 import numpy as np
 
+np.random.seed(42)
+
 #### Define parameters for experiments
 N = [20, 40]  # number of features for each datapoint
 alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
-n_max = 100  # maximum number of epochs
+n_max = 200  # maximum number of epochs
 
 #### Params for data generation
 MU = 0
@@ -36,13 +38,14 @@ def perceptron_algorithm(X: np.ndarray, y: np.ndarray, w: int, n: int) -> [np.nd
     """
 
     E_mu = np.dot(w, X * y)
-    print("E_mu", E_mu)
     if E_mu <= 0:
         w_new = w + (1/n) * X * y
+        is_w_changed = True
     else:
         w_new = w
+        is_w_changed = False
 
-    return w_new, E_mu
+    return w_new, is_w_changed
 
 
 def train(n: int, epochs: int, data: np.ndarray):
@@ -59,13 +62,13 @@ def train(n: int, epochs: int, data: np.ndarray):
     #   because first value is always w(0) = 0
     len_p = len(data[0])
     w = np.zeros((epochs, len_p+1, n))
-    E_mu = np.zeros((epochs, len_p+1))
+    E_mu = np.zeros((epochs, len_p))
     for e in range(epochs):
         for i in range(len_p):
             X, y = data[0][i], data[1][i]  # x∈R^n, y∈R
-            w[e][i+1], E_mu[e][i+1] = perceptron_algorithm(X, y, w[e][i], n)
+            w[e][i+1], E_mu[e][i] = perceptron_algorithm(X, y, w[e][i], n)
     # Training is performed until solution is found, such that E_mu > 0 for all mu, or max number of sweeps is reached
-        if all(E_mu[e]):
+        if not any(E_mu[e]):
             print(f"Solution has been found in epoch {e+1}")
             return w, E_mu
         # At the end of the current epoch, assign w(t), where t=len_p+1, as w(0) for next epoch
@@ -85,9 +88,9 @@ for n in N:
             datasets[n][p].append(generate_data(n, p))
 
 # RUN TRAINING for a single dataset
-f = 20  # number of features
-d = 30  # number of datapoints
-w, E_mu = train(f, 10, datasets[f][d][0])
+f = 40  # number of features
+d = 80  # number of datapoints
+w, E_mu = train(f, 199, datasets[f][d][0])
 
 # TODO: main code for stitching functions together
 
