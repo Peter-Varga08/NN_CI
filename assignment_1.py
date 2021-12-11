@@ -69,13 +69,13 @@ def train(n: int, epochs: int, data: np.ndarray) -> [np.ndarray, np.ndarray]:
             w[e][i+1], E_mu[e][i] = perceptron_algorithm(X, y, w[e][i], n)
     # Training is performed until solution is found, such that E_mu > 0 for all mu, or max number of sweeps is reached
         if not any(E_mu[e]):
-            print(f"Solution has been found in epoch {e+1}")
-            return w, E_mu, e+1
+            print(f"Solution has been found in epoch {e}")
+            return w, E_mu, e, True
         # At the end of the current epoch, assign w(t), where t=len_p+1, as w(0) for next epoch
         if e < epochs-1:
             w[e+1][0] = w[e][-1]
     print("Training has ended due to reach of maximum number of sweeps, solution has not been found.")
-    return w, E_mu, epochs
+    return w, E_mu, epochs, False
 
 
 # CREATING DATASETS
@@ -87,12 +87,23 @@ for n in N:
         for _ in range(n_D):  # create n_D datasets for each P
             datasets[n][p].append(generate_data(n, p))
 
-# RUN TRAINING for a single dataset
-f = 40  # number of features
-d = 80  # number of datapoints
+# RUN TRAINING for a single dataset (just for testing purpose)
+f = 20  # number of features
+d = 30  # number of datapoints
 max_epochs = 100  # number of maximum epochs to perform the training for
-w, E_mu, epoch_count = train(f, max_epochs, datasets[f][d][0])
+w, E_mu, epoch_count, is_solution = train(f, max_epochs, datasets[f][d][0])
 
+# RUN TRAINING for ALL datasets
+sr_count = 0  # count of successful runs
+alpha_success = {a: 0 for a in alpha}
+for n in datasets.keys():
+    for idx, p in enumerate(datasets[n].keys()):
+        for dataset in datasets[n][p]:
+            _, _, _, is_solution = train(n, max_epochs, dataset)
+            if is_solution:
+                sr_count += 1
+                a = p/n
+                alpha_success[a] += 1
 
 # TODO: Extensions
 # 1) Observe behaviour of Q_l.s.
