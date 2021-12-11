@@ -32,9 +32,9 @@ def generate_data(n: int, p: int) -> [np.ndarray, np.ndarray]:
     return X, y
 
 
-def perceptron_algorithm(X: np.ndarray, y: np.ndarray, w: int, n: int) -> [np.ndarray, int]:
+def perceptron_algorithm(X: np.ndarray, y: np.ndarray, w: int, n: int) -> [np.ndarray, bool]:
     """ Implementation of the Rosenblatt Perceptron algorithm.
-    :return: Updated weight vector and E_mu.
+    :return: Updated weight vector and boolean to indicate whether weight vector was updated or not.
     """
 
     E_mu = np.dot(w, X * y)
@@ -48,12 +48,12 @@ def perceptron_algorithm(X: np.ndarray, y: np.ndarray, w: int, n: int) -> [np.nd
     return w_new, is_w_changed
 
 
-def train(n: int, epochs: int, data: np.ndarray):
+def train(n: int, epochs: int, data: np.ndarray) -> [np.ndarray, np.ndarray]:
     """ Implementation of sequential perceptron training by cyclic representation of the P examples.
      :param n: Number of features. A single chosen value from N. E.g.: N[0].
      :param epochs: Number of epochs.
      :param data: Dataset containing generated examples using 'generate_data' funct.
-     :return: ...
+     :return: Weight vector array and E_mu array (for all epochs), and epoch number at which training stopped.
      """
     assert epochs <= n_max, "Epoch number error, can't be higher than n_max"
 
@@ -70,12 +70,12 @@ def train(n: int, epochs: int, data: np.ndarray):
     # Training is performed until solution is found, such that E_mu > 0 for all mu, or max number of sweeps is reached
         if not any(E_mu[e]):
             print(f"Solution has been found in epoch {e+1}")
-            return w, E_mu
+            return w, E_mu, e+1
         # At the end of the current epoch, assign w(t), where t=len_p+1, as w(0) for next epoch
         if e < epochs-1:
             w[e+1][0] = w[e][-1]
     print("Training has ended due to reach of maximum number of sweeps, solution has not been found.")
-    return w, E_mu
+    return w, E_mu, epochs
 
 
 # CREATING DATASETS
@@ -90,19 +90,7 @@ for n in N:
 # RUN TRAINING for a single dataset
 f = 40  # number of features
 d = 80  # number of datapoints
-w, E_mu = train(f, 199, datasets[f][d][0])
-
-# TODO: main code for stitching functions together
-
-# Note for Alex:
-# ---------------------------------------------------------------------------------------
-# - Interpretation for 'datasets' data structure:
-# -- first key is the number of features, the keys inside those are the number of datapoints within each dataset, e.g.:
-# -- datasets[20][35] means you are accessing a dataset which has 20 features and 35 datapoints
-# -- The actual array which contains the values for each datapoint in the previous example can be selected via
-#       datasets[20][35][0][0], the labels array can be selected via datasets[20][35][0][1]. This is because there are
-#       n_D = 50 datasets for each configuration, thus len(datasets[20][35)) would output 50 for example.
-# ---------------------------------------------------------------------------------------
+w, E_mu, epoch_count = train(f, 199, datasets[f][d][0])
 
 
 # TODO: Extensions
