@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 #### Define parameters for experiments
 N = [20,40]  # number of features for each datapoint
-alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
+alpha = [x / 100 for x in range(75, 325, 15)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
 n_max = 100  # maximum number of epochs
 
@@ -26,10 +26,14 @@ def generate_data(n: int, p: int) -> tuple([np.ndarray, np.ndarray]):
     X = []
     for i in range(n):
         X.append(np.random.normal(MU, SIGMA, p))
+
+    X_clamped = X.copy()
+    X_clamped.append(-1 * np.ones(p))
     X = np.asarray(X).transpose()
+    X_clamped = np.asarray(X_clamped).transpose()
 
     y = np.asarray([np.random.choice([-1, 1]) for _ in range(len(X))])
-    return X, y
+    return X, y, X_clamped
 
 def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
     """ Implementation of sequential perceptron training by cyclic representation of the P examples.
@@ -40,7 +44,7 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
      :return: w : the final weights of the perceptron after training
               i : the number of epochs reached 
      """
-    w = np.zeros(n)
+    w = np.zeros(len(data[0,:]))
     for i in range(epochs):
         weight_step_taken = False #This tracks whether a step has been taken in the current epoch
         for j in range(p):
@@ -83,6 +87,7 @@ def generate_data_dict(N) -> dict:
 
 if __name__ == '__main__':
     proportion_successful = np.zeros((len(N), len(alpha)))
+    proportion_successful_clamped = np.zeros((len(N), len(alpha)))
     datasets = generate_data_dict(N)
 
     #calculating the proportion of successful perceptron training runs
@@ -90,20 +95,37 @@ if __name__ == '__main__':
         for k in tqdm(range(len(alpha))):
             p = int(alpha[k] * N[m])
             number_successful = 0
+            number_successful_clamped = 0
             for _ in range(n_D):
                 w_final, i = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1])
+                w_final_clamped, i_clamped = train(N[m], p, n_max, datasets[N[m]][p][_][2], datasets[N[m]][p][_][1])
                 if i < n_max - 1:
                     number_successful += 1
+                if i_clamped < n_max - 1:
+                    number_successful_clamped += 1
             proportion_successful[m, k] = number_successful/n_D
+            proportion_successful_clamped[m, k] = number_successful_clamped/n_D
+    print(w_final)
+    print(w_final_clamped)
 
-    plt.figure()
-    for i in range(len(N)):
-        plt.plot(alpha ,proportion_successful[i,:], label = f'N = {N[i]}')
-    plt.xlabel('alpha')
-    plt.ylabel('Proportion of successful runs')
-    plt.legend()
+fig, ax = plt.subplots(nrows=2, ncols=1)
 
-    plt.show()
+a = 0
+for row in ax:
+    if a == 0: 
+        row.plot(alpha ,proportion_successful[0,:], label = f'N = {N[0]}')
+        row.plot(alpha ,proportion_successful_clamped[0,:], label = f'N = {N[0]},  clamped')
+        row.legend()
+        row.set_ylabel('proportion_successful')
+        row.set_xlabel('alpha')
+        a = 1 
+    else:
+        row.plot(alpha ,proportion_successful[1,:], label = f'N = {N[1]}')
+        row.plot(alpha ,proportion_successful_clamped[1,:], label = f'N = {N[1]},  clamped')
+        row.legend()
+        row.set_ylabel('proportion_successful')
+        row.set_xlabel('alpha')
+plt.show()
     
 
 

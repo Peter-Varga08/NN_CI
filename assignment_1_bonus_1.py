@@ -1,5 +1,5 @@
 
-""" Assignment_1 of Neural Networks and Computational Intelligence:
+""" Assignment_1 Bonus 1 of Neural Networks and Computational Intelligence:
  Implementation of Rosenblatt Perceptron Algorithm
 """
 
@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 #### Define parameters for experiments
-N = [20,40]  # number of features for each datapoint
-alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
+N = [1000]  # number of features for each datapoint
+alpha = [x / 100 for x in range(155, 175, 5)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
 n_max = 100  # maximum number of epochs
 
@@ -105,10 +105,6 @@ if __name__ == '__main__':
 
     plt.show()
     
-
-
-
-
 # TODO: Extensions
 # 1) Observe behaviour of Q_l.s.
 # 2) Determine embedding strengths x^mu

@@ -8,9 +8,9 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 #### Define parameters for experiments
-N = [20,40]  # number of features for each datapoint
-alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
-n_D = 50  # number of datasets required for each value of P
+N = [400]  # number of features for each datapoint
+alpha = [x / 100 for x in range(300, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
+n_D = 1  # number of datasets required for each value of P
 n_max = 100  # maximum number of epochs
 
 #### Params for data generation
@@ -41,6 +41,7 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
               i : the number of epochs reached 
      """
     w = np.zeros(n)
+    embedding_strength = np.zeros(p)
     for i in range(epochs):
         weight_step_taken = False #This tracks whether a step has been taken in the current epoch
         for j in range(p):
@@ -51,12 +52,13 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
             if E_mu <= 0: 
                 weight_step_taken = True
                 w += (1/n) * data[j,:] * labels[j]
+                embedding_strength[j] += 1
 
         #this breaks the outer training loop if no weight step was performed in an entire epoch
         if weight_step_taken == False:
             break
 
-    return w, i #also returning i as its important for determining if a solution was found
+    return w, i, embedding_strength #also returning i as its important for determining if a solution was found
 
 
 # CREATING DATASETS
@@ -91,19 +93,25 @@ if __name__ == '__main__':
             p = int(alpha[k] * N[m])
             number_successful = 0
             for _ in range(n_D):
-                w_final, i = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1])
+                w_final, i, embedding_strength = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1])
                 if i < n_max - 1:
                     number_successful += 1
             proportion_successful[m, k] = number_successful/n_D
-
+    print(embedding_strength)
     plt.figure()
-    for i in range(len(N)):
-        plt.plot(alpha ,proportion_successful[i,:], label = f'N = {N[i]}')
-    plt.xlabel('alpha')
-    plt.ylabel('Proportion of successful runs')
-    plt.legend()
+
+    plt.hist(embedding_strength, bins = len(embedding_strength))
 
     plt.show()
+
+    #plt.figure()
+    #for i in range(len(N)):
+        #plt.plot(alpha ,proportion_successful[i,:], label = f'N = {N[i]}')
+    #plt.xlabel('alpha')
+    #plt.ylabel('Proportion of successful runs')
+    #plt.legend()
+
+    #plt.show()
     
 
 

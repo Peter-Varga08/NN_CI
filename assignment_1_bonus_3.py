@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 #### Define parameters for experiments
-N = [20,40]  # number of features for each datapoint
+N = [40]  # number of features for each datapoint
 alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
 n_max = 100  # maximum number of epochs
-
+C = np.linspace(0.1,1,10)
 #### Params for data generation
 MU = 0
 SIGMA = 1
@@ -31,7 +31,7 @@ def generate_data(n: int, p: int) -> tuple([np.ndarray, np.ndarray]):
     y = np.asarray([np.random.choice([-1, 1]) for _ in range(len(X))])
     return X, y
 
-def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
+def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, c: float):
     """ Implementation of sequential perceptron training by cyclic representation of the P examples.
      :param n: Number of features. A single chosen value from N. E.g.: N[0].
      :param p: Number of examples. A single chosen value from P. E.g.: P[0][0]. First index has to match index of N.
@@ -48,7 +48,7 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray):
             E_mu = np.dot(w, data[j,:]) * labels[j]
 
             #perform weight update
-            if E_mu <= 0: 
+            if E_mu <= c: 
                 weight_step_taken = True
                 w += (1/n) * data[j,:] * labels[j]
 
@@ -82,23 +82,23 @@ def generate_data_dict(N) -> dict:
     return datasets 
 
 if __name__ == '__main__':
-    proportion_successful = np.zeros((len(N), len(alpha)))
+    proportion_successful = np.zeros((len(C), len(alpha)))
     datasets = generate_data_dict(N)
 
     #calculating the proportion of successful perceptron training runs
-    for m in tqdm(range(len(N))):
+    for c in tqdm(range(len(C))):
         for k in tqdm(range(len(alpha))):
-            p = int(alpha[k] * N[m])
+            p = int(alpha[k] * N[0])
             number_successful = 0
             for _ in range(n_D):
-                w_final, i = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1])
+                w_final, i = train(N[0], p, n_max, datasets[N[0]][p][_][0], datasets[N[0]][p][_][1], c)
                 if i < n_max - 1:
                     number_successful += 1
-            proportion_successful[m, k] = number_successful/n_D
+            proportion_successful[c, k] = number_successful/n_D
 
     plt.figure()
-    for i in range(len(N)):
-        plt.plot(alpha ,proportion_successful[i,:], label = f'N = {N[i]}')
+    for i in range(len(C)):
+        plt.plot(alpha ,proportion_successful[i,:], label = f'c = {C[i]}')
     plt.xlabel('alpha')
     plt.ylabel('Proportion of successful runs')
     plt.legend()
