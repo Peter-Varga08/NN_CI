@@ -11,7 +11,7 @@ np.random.seed(42)
 
 #### Define parameters for experiments
 N = [20, 40, 60, 80, 100]  # number of features for each datapoint
-alpha = [x / 100 for x in range(75, 325, 15)]  # ratio of (datapoint_amount / feature_amount)
+alpha = [x / 100 for x in range(75, 325, 25)]  # ratio of (datapoint_amount / feature_amount)
 n_D = 50  # number of datasets required for each value of P
 n_max = 200  # maximum number of epochs
 
