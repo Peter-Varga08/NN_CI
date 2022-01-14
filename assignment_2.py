@@ -1,5 +1,5 @@
-""" Assignment_1 of Neural Networks and Computational Intelligence:
- Implementation of Rosenblatt Perceptron Algorithm
+""" Assignment_2 of Neural Networks and Computational Intelligence:
+ Implementation of Learning a linearly separable rule
 """
 
 from typing import List
