@@ -11,7 +11,7 @@ import pprint
 np.random.seed(42)
 
 #### Define parameters for experiments
-N = [20, 40]  # number of features for each datapoint
+N = [20, 40, 60, 80]  # number of features for each datapoint
 alpha = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]  # ratio of (datapoint_amount / feature_amount)
 n_D = 10  # number of datasets required for each value of P
 n_max = 100  # maximum number of epochs
@@ -21,8 +21,7 @@ MU = 0
 SIGMA = 1
 
 
-# ---------------- NEW FUNCTION -----------------
-def generate_wstar(n: list) -> np.ndarray:
+def generate_wstar(n: list) -> list:
     """ Generation of teacher perceptron, that is, a randomly drawn w* with |w*|^2 = N.
     The above equation means that we are looking for (w_1)^2 + (w_2)^2 ... + (w_n)^2 being equal to N, thus the
     problem can be solved with the following:
@@ -36,15 +35,15 @@ def generate_wstar(n: list) -> np.ndarray:
     """
     w_star = []
     for num in n:
-        points = sorted(np.random.uniform(0, num, num-1))
-        intervals = [points[i]-points[i-1] for i in range(1, len(points))]
+        points = sorted(np.random.uniform(0, num, num - 1))
+        intervals = [points[i] - points[i - 1] for i in range(1, len(points))]
         intervals.insert(0, points[0])  # first interval is the first value (e.g. x1-0)
-        intervals.append(num-points[-1])  # last interval is N-x[-1]
+        intervals.append(num - points[-1])  # last interval is N-x[-1]
         w_star.append(np.array([np.sqrt(i) for i in intervals]))
     return w_star
 
 
-def generate_data(n: int, p: int, w_star: np.ndarray) -> tuple([np.ndarray, np.ndarray]):
+def generate_data(n: int, p: int, w_star: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """ Generation of artificial dataset containing P randomly generated N-dimensional feature vectors and labels.
         - The datapoints are sampled from a Gaussian distribution with mu=0 and std=1.
         - The labels are independent random numbers y = {-1,1}.
@@ -54,13 +53,10 @@ def generate_data(n: int, p: int, w_star: np.ndarray) -> tuple([np.ndarray, np.n
     for i in range(n):
         X.append(np.random.normal(MU, SIGMA, p))
     X = np.asarray(X).transpose()
-
-    # ---------------- NEW WAY OF GENERATING LABELS -----------------
     y = np.asarray([np.sign(np.dot(w_star, x)) for x in X])
     return X, y
 
 
-# ---------------- NEW TRAIN FUNCTION -----------------
 def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_star: np.ndarray):
     """ Implementation of sequential perceptron training by cyclic representation of the P examples.
      :param n: Number of features. A single chosen value from N. E.g.: N[0].
@@ -71,7 +67,6 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
      :param w_star: An n-dim teacher perceptron.
      :return: w : the final weights of the perceptron after training
               i : the number of epochs reached
-
      """
 
     w = np.zeros(n)
@@ -79,17 +74,17 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
     # perceptron has) by the end of the training - THIS IS NOT the same weight vector that we obtain by stopping criterion
     w_tmax = w
     stop_training = False  # boolean flag used for stopping criterion
-    req_epochs = 0  # variable containing required number of epochs to run the algorithm
+    req_e = 0
 
     # The new loop goes until t_max = n_max * p single training steps have been performed
-    for i in range(epochs*p):
+    for i in range(epochs * p):
         # |-------------------|
         # | Minover algorithm |
         # |-------------------|
         # 1) determine stabilities of all examples at each step
         kappas = []
         for k in range(p):
-            kappas.append(np.dot(w, data[k, :]*labels[k]))  # we don't need to divide by the norm of w(t)
+            kappas.append(np.dot(w, data[k, :] * labels[k]))  # we don't need to divide by the norm of w(t)
         # 2) identify example mu(t) that has currently the minimal stability
         mu_min = kappas.index(min(kappas))
         # 3) perform a Hebbian update step with it
@@ -102,15 +97,15 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
         # check for cosine criterion in each training step (0.97 was an arbitrary pick, can be finetuned later)
         if (np.dot(w, w_star) / (np.linalg.norm(w) * np.linalg.norm(w_star))) >= 0.97 and not stop_training:
             stop_training = True
-            req_epochs = i
+            req_e = i
 
-    req_epochs = i if req_epochs == 0 else req_epochs
+    req_e = i if not stop_training else req_e
     if stop_training:
         print("Stopping criterion has been reached.")
     # determine generalization error
-    error = 1/np.pi * np.arccos((np.dot(w, w_star))/(np.linalg.norm(w_tmax) * np.linalg.norm(w_star)))
+    error = 1 / np.pi * np.arccos((np.dot(w_tmax, w_star)) / (np.linalg.norm(w_tmax) * np.linalg.norm(w_star)))
 
-    return w, req_epochs, error  # also returning req_epochs as its important for determining if a solution was found
+    return w, req_e, error  # also returning req_epochs as its important for determining if a solution was found
 
 
 # CREATING DATASETS
@@ -137,31 +132,24 @@ def generate_data_dict(N: List[int], w_stars: List[np.ndarray]) -> dict:
 
 
 if __name__ == '__main__':
-    # proportion_successful = np.zeros((len(N), len(alpha)))
-    # ---------------- New Y value ----------------
     errors = np.zeros((len(N), len(alpha)))  # we collect errors instead of successful runs this time
-
     perceptrons = generate_wstar(N)  # an array of perceptrons
     datasets = generate_data_dict(N, perceptrons)
 
     # calculating the proportion of successful perceptron training runs
-    experiment_params = {n: {a: [0, 0, 0] for a in alpha} for n in N}
+    experiment_params = {n: {a: 0 for a in alpha} for n in N}
     for m in tqdm(range(len(N))):
         for k in tqdm(range(len(alpha))):
             p = int(alpha[k] * N[m])
-            number_successful = 0
-            required_epochs = []
+            training_steps = []
             curr_errors = []  # generalization errors of the next 10 datasets
             for _ in range(n_D):
-                w_final, i, e = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1], perceptrons[m])
+                X, y = datasets[N[m]][p][_][0], datasets[N[m]][p][_][1]
+                w_final, i, e = train(N[m], p, n_max, X, y, perceptrons[m])
                 curr_errors.append(e)
-                if i < ((n_max-1) * p):
-                    number_successful += 1
-                    required_epochs.append(i+1)
-            # proportion_successful[m, k] = number_successful / n_D
+                training_steps.append(i + 1)
             errors[m, k] = np.mean(curr_errors)
-            experiment_params[N[m]][alpha[k]][0] = number_successful
-            experiment_params[N[m]][alpha[k]][1] = np.mean(required_epochs) if len(required_epochs) > 0 else -1
+            experiment_params[N[m]][alpha[k]] = np.mean(training_steps)
     print("Experiment params", experiment_params)
     plt.figure()
     for i in range(len(N)):
