@@ -6,7 +6,6 @@ from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-import pprint
 
 np.random.seed(42)
 
@@ -67,6 +66,8 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
      :param w_star: An n-dim teacher perceptron.
      :return: w : the final weights of the perceptron after training
               i : the number of epochs reached
+              error: generalization error at the end of the training
+              similarity: cosine similarity between w and w*
      """
 
     w = np.zeros(n)
