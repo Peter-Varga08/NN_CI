@@ -10,6 +10,7 @@ import pprint
 import random
 
 np.random.seed(42)
+random.seed(42)
 
 #### Define parameters for experiments
 N = [20, 40, 60, 80]  # number of features for each datapoint
@@ -47,7 +48,7 @@ def generate_wstar(n: list) -> list:
 def generate_data(n: int, p: int, w_star: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """ Generation of artificial dataset containing P randomly generated N-dimensional feature vectors and labels.
         - The datapoints are sampled from a Gaussian distribution with mu=0 and std=1.
-        - The labels are independent random numbers y = {-1,1}.
+        - The labels are the outputs of the teacher perceptron.
     :return: Generated dataset as a PxN numpy array; labels as Px1 numpy array.
     """
     X = []
@@ -77,11 +78,6 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
      """
 
     w = np.zeros(n)
-    # w_tmax is the weight vector that will hopefully contain the optimal stability (the stability that the teacher
-    # perceptron has) by the end of the training - THIS IS NOT the same weight vector that we obtain by stopping criterion
-    w_tmax = w
-    stop_training = False  # boolean flag used for stopping criterion
-    req_e = 0  # variable containing required number of epochs to run the algorithm
 
     # The new loop goes until t_max = n_max * p single training steps have been performed
     for i in range(epochs * p):
@@ -95,18 +91,14 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
         # 2) identify example mu(t) that has currently the minimal stability
         mu_min = kappas.index(min(kappas))
         # 3) perform a Hebbian update step with it
-        if not stop_training:
-            w += (1 / n) * data[mu_min, :] * labels[mu_min]
-        else:  # after heaving reached the criterion, we don't need to update 'w' anymore, only 'w_tmax'
-            w_tmax += (1 / n) * data[mu_min, :] * labels[mu_min]
+        w += (1 / n) * data[mu_min, :] * labels[mu_min]
 
-    req_e = i if req_e == 0 else req_e
-    if stop_training:
-        print("Stopping criterion has been reached.")
+    # check for cosine criterion in at the end of training
+    similarity = np.dot(w, w_star) / (np.linalg.norm(w) * np.linalg.norm(w_star))
     # determine generalization error
-    error = 1 / np.pi * np.arccos((np.dot(w_tmax, w_star)) / (np.linalg.norm(w_tmax) * np.linalg.norm(w_star)))
+    error = 1 / np.pi * np.arccos((np.dot(w, w_star)) / (np.linalg.norm(w) * np.linalg.norm(w_star)))
 
-    return w, req_e, error  # also returning req_epochs as its important for determining if a solution was found
+    return w, i, error, similarity
 
 
 # CREATING DATASETS
@@ -138,18 +130,22 @@ if __name__ == '__main__':
     datasets = generate_data_dict(N, perceptrons)
 
     # calculating the proportion of successful perceptron training runs
-    experiment_params = {n: {a: 0 for a in alpha} for n in N}
+    experiment_params = {n: {a: [0, 0] for a in alpha} for n in N}
     for m in tqdm(range(len(N))):
         for k in tqdm(range(len(alpha))):
             p = int(alpha[k] * N[m])
             training_steps = []
+            cos_sim = []
             curr_errors = []  # generalization errors of the next 10 datasets
             for _ in range(n_D):
-                w_final, i, e = train(N[m], p, n_max, datasets[N[m]][p][_][0], datasets[N[m]][p][_][1], perceptrons[m])
+                X, y = datasets[N[m]][p][_][0], datasets[N[m]][p][_][1]
+                w_final, i, e, similarity = train(N[m], p, n_max, X, y, perceptrons[m])
                 curr_errors.append(e)
                 training_steps.append(i + 1)
+                cos_sim.append(similarity)
             errors[m, k] = np.mean(curr_errors)
-            experiment_params[N[m]][alpha[k]] = np.mean(training_steps)
+            experiment_params[N[m]][alpha[k]][0] = np.mean(training_steps)
+            experiment_params[N[m]][alpha[k]][1] = np.mean(cos_sim)
     print("Experiment params", experiment_params)
     plt.figure()
     for i in range(len(N)):

@@ -14,7 +14,7 @@ np.random.seed(42)
 N = [20, 40, 60, 80]  # number of features for each datapoint
 alpha = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]  # ratio of (datapoint_amount / feature_amount)
 n_D = 10  # number of datasets required for each value of P
-n_max = 10  # maximum number of epochs
+n_max = 100  # maximum number of epochs
 
 #### Params for data generation
 MU = 0

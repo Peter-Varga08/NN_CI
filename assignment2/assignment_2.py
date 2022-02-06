@@ -70,11 +70,6 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
      """
 
     w = np.zeros(n)
-    # w_tmax is the weight vector that will hopefully contain the optimal stability (the stability that the teacher
-    # perceptron has) by the end of the training - THIS IS NOT the same weight vector that we obtain by stopping criterion
-    w_tmax = w
-    stop_training = False  # boolean flag used for stopping criterion
-    req_e = 0
 
     # The new loop goes until t_max = n_max * p single training steps have been performed
     for i in range(epochs * p):
@@ -88,24 +83,14 @@ def train(n: int, p: int, epochs: int, data: np.ndarray, labels: np.ndarray, w_s
         # 2) identify example mu(t) that has currently the minimal stability
         mu_min = kappas.index(min(kappas))
         # 3) perform a Hebbian update step with it
-        if not stop_training:
-            w += (1 / n) * data[mu_min, :] * labels[mu_min]
-            w_tmax = w
-        else:  # after heaving reached the criterion, we don't need to update 'w' anymore, only 'w_tmax'
-            w_tmax += (1 / n) * data[mu_min, :] * labels[mu_min]
+        w += (1 / n) * data[mu_min, :] * labels[mu_min]
 
-        # check for cosine criterion in each training step (0.97 was an arbitrary pick, can be finetuned later)
-        if (np.dot(w, w_star) / (np.linalg.norm(w) * np.linalg.norm(w_star))) >= 0.97 and not stop_training:
-            stop_training = True
-            req_e = i
-
-    req_e = i if not stop_training else req_e
-    if stop_training:
-        print("Stopping criterion has been reached.")
+    # check for cosine criterion in at the end of training
+    similarity = np.dot(w, w_star) / (np.linalg.norm(w) * np.linalg.norm(w_star))
     # determine generalization error
-    error = 1 / np.pi * np.arccos((np.dot(w_tmax, w_star)) / (np.linalg.norm(w_tmax) * np.linalg.norm(w_star)))
+    error = 1 / np.pi * np.arccos((np.dot(w, w_star)) / (np.linalg.norm(w) * np.linalg.norm(w_star)))
 
-    return w, req_e, error  # also returning req_epochs as its important for determining if a solution was found
+    return w, i, error, similarity
 
 
 # CREATING DATASETS
@@ -137,19 +122,22 @@ if __name__ == '__main__':
     datasets = generate_data_dict(N, perceptrons)
 
     # calculating the proportion of successful perceptron training runs
-    experiment_params = {n: {a: 0 for a in alpha} for n in N}
+    experiment_params = {n: {a: [0, 0] for a in alpha} for n in N}
     for m in tqdm(range(len(N))):
         for k in tqdm(range(len(alpha))):
             p = int(alpha[k] * N[m])
             training_steps = []
+            cos_sim = []
             curr_errors = []  # generalization errors of the next 10 datasets
             for _ in range(n_D):
                 X, y = datasets[N[m]][p][_][0], datasets[N[m]][p][_][1]
-                w_final, i, e = train(N[m], p, n_max, X, y, perceptrons[m])
+                w_final, i, e, similarity = train(N[m], p, n_max, X, y, perceptrons[m])
                 curr_errors.append(e)
                 training_steps.append(i + 1)
+                cos_sim.append(similarity)
             errors[m, k] = np.mean(curr_errors)
-            experiment_params[N[m]][alpha[k]] = np.mean(training_steps)
+            experiment_params[N[m]][alpha[k]][0] = np.mean(training_steps)
+            experiment_params[N[m]][alpha[k]][1] = np.mean(cos_sim)
     print("Experiment params", experiment_params)
     plt.figure()
     for i in range(len(N)):
